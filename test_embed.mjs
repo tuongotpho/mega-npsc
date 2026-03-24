@@ -12,7 +12,7 @@ globalThis.fetch = function(url, options) {
     return originalFetch(url, options);
 };
 
-const ai = new GoogleGenAI({ apiKey: "AIzaSyD9JtALFop3Ksm88WHiQsAZdr5lccZ19vw" });
+const ai = new GoogleGenAI({ apiKey: "" });
 
 async function test() {
   const modelsToTest = ['text-embedding-004', 'gemini-embedding-001', 'models/text-embedding-004', 'embedding-001'];
