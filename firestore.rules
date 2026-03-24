@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- HELPER FUNCTIONS ---
+    
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Lấy dữ liệu user một cách an toàn
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn();
+    }
+
+    function isPrivilegedUser() {
+      return isSignedIn();
+    }
+
+    function isProjectManagerForProject(projectId) {
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/projects/$(projectId)) &&
+             request.auth.uid in get(/databases/$(database)/documents/projects/$(projectId)).data.projectManagerIds;
+    }
+
+    // --- COLLECTION RULES ---
+
+    // Users: Cho phép xem danh bạ nhân sự để gán quyền
+    match /users/{userId} {
+      allow read: if isSignedIn(); 
+      allow create: if isSignedIn() && request.auth.uid == userId && (request.resource.data.role == null);
+      allow update, delete: if isAdmin();
+
+      match /notifications/{notificationId} {
+        allow read, update, delete: if isSignedIn() && request.auth.uid == userId;
+        allow create: if isSignedIn();
+      }
+    }
+
+    // Projects: Quản lý dự án SCL
+    match /projects/{projectId} {
+      allow read: if isSignedIn() && (
+                    isPrivilegedUser() ||
+                    (request.auth.uid in resource.data.projectManagerIds) ||
+                    (request.auth.uid in resource.data.leadSupervisorIds)
+                  );
+      
+      allow create: if isSignedIn() && isPrivilegedUser();
+      
+      allow update: if isSignedIn() && (
+                      isPrivilegedUser() || 
+                      (request.auth.uid in resource.data.projectManagerIds)
+                    );
+                    
+      allow delete: if isAdmin();
+
+      match /files/{fileId} {
+          allow list, read, create, delete: if isPrivilegedUser() || isProjectManagerForProject(projectId);
+      }
+      match /folders/{folderId} {
+          allow list, read, create, delete: if isPrivilegedUser() || isProjectManagerForProject(projectId);
+      }
+    }
+
+    // Reports: Nhật ký công trình
+    match /reports/{reportId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && (
+                      isPrivilegedUser() || (
+                        exists(/databases/$(database)/documents/projects/$(request.resource.data.projectId)) && (
+                          request.auth.uid in get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.projectManagerIds ||
+                          request.auth.uid in get(/databases/$(database)/documents/projects/$(request.resource.data.projectId)).data.leadSupervisorIds
+                        )
+                      )
+                    );
+      allow update, delete: if isAdmin();
+    }
+
+    // Initiatives: Kho sáng kiến (Công khai nội bộ)
+    match /initiatives/{id} {
+      allow read: if true; // Công khai cho mọi người xem và tra cứu
+      allow write: if isAdmin() || isPrivilegedUser();
+      
+      // Hỗ trợ truy vấn tài liệu trong sub-collection
+      match /{allSubcollections=**} {
+        allow read: if isSignedIn();
+        allow write: if isPrivilegedUser();
+      }
+    }
+
+    // Pending Initiatives: Đơn đăng ký sáng kiến mới
+    match /pending_initiatives/{id} {
+      allow create: if true; // Cho phép khách nộp đơn
+      allow read, delete: if isPrivilegedUser();
+      allow update: if isPrivilegedUser();
+    }
+
+    // Contractors: Thư viện nhà thầu
+    match /contractors/{contractorId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && isPrivilegedUser();
+    }
+
+    // Research Projects: Đề tài KHCN
+    match /research_projects/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isPrivilegedUser();
+    }
+
+    // Settings
+    match /settings/{settingId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

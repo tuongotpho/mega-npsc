@@ -1,0 +1,22 @@
+{
+  "name": "Mega App-NPSC",
+  "short_name": "QLDA NPSC",
+  "description": "An application to manage large-scale architectural repair projects, track daily progress with image reports, and provide role-based access for project managers, supervisors, and department heads. Includes an AI-powered summary feature using the Gemini API.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#1E40AF",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/11464/11464129.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/11464/11464129.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

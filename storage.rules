@@ -1,0 +1,80 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ========== HELPER FUNCTIONS ==========
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserRole() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && getUserRole() == 'Admin';
+    }
+
+    function isDepartmentHead() {
+      return isSignedIn() && getUserRole() == 'DepartmentHead';
+    }
+
+    function isProjectManager(projectId) {
+      let project = firestore.get(/databases/(default)/documents/projects/$(projectId)).data;
+      return project.projectManagerIds.hasAny([request.auth.uid]);
+    }
+
+    function isLeadSupervisor(projectId) {
+      let project = firestore.get(/databases/(default)/documents/projects/$(projectId)).data;
+      return project.leadSupervisorIds.hasAny([request.auth.uid]);
+    }
+    
+// ========== HÌNH ẢNH BÁO CÁO (/reports/{projectId}/{imageName}) ==========
+    match /reports/{projectId}/{allPaths=**} {
+      // Ai có thể ĐỌC (xem) hình ảnh báo cáo?
+      // - Admin, Lãnh đạo phòng, và bất kỳ Cán bộ Quản lý hoặc Giám sát trưởng nào được gán vào dự án NÀY.
+      allow read: if isAdmin()
+                  || isDepartmentHead()
+                  || (isSignedIn() && isProjectManager(projectId))
+                  || (isSignedIn() && isLeadSupervisor(projectId));
+
+      // Ai có thể GHI (tải lên/xóa) hình ảnh báo cáo?
+      // - **SỬA LỖI QUAN TRỌNG:** Chỉ Cán bộ Quản lý và Giám sát trưởng được gán vào dự án NÀY.
+      allow write: if (isSignedIn() && isProjectManager(projectId))
+                   || (isSignedIn() && isLeadSupervisor(projectId))
+                   || isAdmin();
+   }
+   
+   // ========== PROJECT FILES ==========
+    match /projects/{projectId}/{allPaths=**} {
+      allow read, write:
+        if isAdmin() // toàn quyền
+        || isDepartmentHead() // toàn quyền dự án
+        || (isSignedIn() && isProjectManager(projectId)); // toàn quyền dự án của mình
+    }
+
+    // ========== SÁNG KIẾN - ĐƠN ĐĂNG KÝ (PUBLIC UPLOAD) ==========
+    // Cho phép upload file đính kèm khi đăng ký sáng kiến mới (kể cả chưa đăng nhập)
+    match /pending_initiatives/{allPaths=**} {
+      // Cho phép 'get' (tải về/xem) công khai nếu biết chính xác đường dẫn file (cần thiết cho getDownloadURL)
+      allow get: if true; 
+      // Chỉ cho phép 'list' (xem danh sách file) nếu đã đăng nhập (bảo mật tránh quét toàn bộ thư mục)
+      allow list: if isSignedIn(); 
+      // Cho phép 'write' (tải lên) công khai để nộp đơn
+      allow write: if true; 
+    }
+
+    // ========== SÁNG KIẾN - KHO LƯU TRỮ CHÍNH THỨC ==========
+    match /initiatives/{allPaths=**} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() || isDepartmentHead();
+    }
+
+    // ========== PUBLIC ASSETS (nếu có) ==========
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
