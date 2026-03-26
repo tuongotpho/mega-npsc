@@ -87,7 +87,7 @@ service cloud.firestore {
       
       // Hỗ trợ truy vấn tài liệu trong sub-collection
       match /{allSubcollections=**} {
-        allow read: if isSignedIn();
+        allow read: if true;
         allow write: if isPrivilegedUser();
       }
     }
