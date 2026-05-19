@@ -129,7 +129,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ initiatives, activeTheme }) => {
       }
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-flash-latest',
         contents: `CONTEXT DỮ LIỆU ĐÃ LỌC (HYBRID RAG RETRIEVED):\n${context}\n\nCÂU HỎI NGƯỜI DÙNG: "${input}"`,
         config: { 
           systemInstruction: AI_SYSTEM_INSTRUCTION + `\n\nLƯU Ý QUAN TRỌNG:\n1. Dữ liệu trên là danh sách các sáng kiến có liên quan nhất (tìm thấy ${relevantCount} kết quả).\n2. Nếu người dùng hỏi về một người (Tác giả), hãy liệt kê các sáng kiến mà người đó tham gia (dựa vào trường Tác giả).\n3. Nếu người dùng hỏi về một chủ đề, hãy tổng hợp thông tin.\n4. Nếu trong danh sách Context KHÔNG có thông tin chính xác người dùng hỏi, hãy nói rõ là chưa tìm thấy trong kho dữ liệu hiện tại.`,

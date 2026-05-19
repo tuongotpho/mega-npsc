@@ -61,9 +61,9 @@ export const generateProjectSummary = async (project: Project, reports: DailyRep
   `;
 
   try {
-    // FIX: Updated model name to 'gemini-3-flash-preview' for basic text tasks like summarization.
+    // Sử dụng alias 'gemini-flash-latest' để luôn tự động dùng bản Flash mới nhất.
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-flash-latest',
       contents: prompt,
       config: {
         temperature: 0.5,

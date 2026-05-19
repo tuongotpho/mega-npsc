@@ -222,19 +222,14 @@ export const extractInitiativesFromPDF = async (base64Data: string, mimeType: st
   };
 
   try {
-    return await runExtraction('gemini-3-flash-preview');
+    return await runExtraction('gemini-2.5-flash');
   } catch (error: any) {
-    console.warn(`Extraction with gemini-3-flash-preview failed: ${error.message}. Retrying with gemini-2.5-flash...`);
-    try {
-      return await runExtraction('gemini-2.5-flash');
-    } catch (retryError: any) {
-      console.error("Error extracting PDF data (both attempts failed):", retryError);
-      let msg = retryError.message || "Unknown error";
-      if (msg.includes("500") || msg.includes("Internal error")) {
-        msg = "Lỗi máy chủ AI (500). File PDF có thể quá lớn hoặc bị lỗi. Vui lòng thử file nhỏ hơn hoặc thử lại sau.";
-      }
-      throw new Error(msg);
+    console.error("Error extracting PDF data:", error);
+    let msg = error.message || "Unknown error";
+    if (msg.includes("500") || msg.includes("Internal error")) {
+      msg = "Lỗi máy chủ AI (500). File PDF có thể quá lớn hoặc bị lỗi. Vui lòng thử file nhỏ hơn hoặc thử lại sau.";
     }
+    throw new Error(msg);
   }
 };
 
@@ -250,7 +245,7 @@ export const checkSimilarityBatch = async (newItems: any[], existingInitiatives:
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-flash-latest',
       contents: `KHO DỮ LIỆU CŨ:\n${JSON.stringify(catalog)}\n\nDANH SÁCH MỚI CẦN KIỂM TRA:\n${JSON.stringify(newItems)}`,
       config: {
         systemInstruction: "Bạn là chuyên gia kiểm soát trùng lặp sáng kiến. Hãy so sánh danh sách mới với kho dữ liệu cũ. 'duplicate' nếu giống >80%, 'similar' nếu giống 40-80%, 'new' nếu dưới 40%. Trả về JSON.",
@@ -279,7 +274,7 @@ export const autoFillRegisterForm = async (data: string, isText: boolean = false
       : [{ inlineData: { mimeType: 'application/pdf', data: data } }];
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash', 
+      model: 'gemini-flash-latest', 
       contents: {
         parts: [
           ...parts,
@@ -334,7 +329,7 @@ export const checkApprovalSimilarity = async (newItem: {title: string, content: 
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-flash-latest',
       contents: `KHO SÁNG KIẾN ĐÃ DUYỆT (REFERENCE_DB):\n${JSON.stringify(catalog)}\n\nSÁNG KIẾN CẦN RÀ SOÁT (TARGET):\nTiêu đề: ${newItem.title}\nNội dung: ${newItem.content}`,
       config: {
         systemInstruction: `Bạn là thẩm định viên sáng kiến. Nhiệm vụ:
@@ -369,7 +364,7 @@ export const checkPublicSimilarity = async (draft: {title: string, content: stri
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-flash-latest',
       contents: `KHO SÁNG KIẾN HIỆN CÓ:\n${JSON.stringify(catalog)}\n\nÝ TƯỞNG MỚI ĐANG SOẠN THẢO:\nTiêu đề: ${draft.title}\nNội dung: ${draft.content}`,
       config: {
         systemInstruction: `Bạn là Cố vấn Sáng kiến chuyên nghiệp của NPSC.
@@ -414,7 +409,7 @@ export const validateInitiativeCompliance = async (data: { title: string, conten
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-flash-latest',
       contents: `NỘI DUNG SÁNG KIẾN:\nTiêu đề: ${data.title}\nThời gian áp dụng: ${data.monthsApplied} tháng\nNội dung chi tiết: ${data.content}`,
       config: {
         systemInstruction: `Bạn là Cán bộ Thẩm định Sáng kiến tại EVNNPC. Nhiệm vụ của bạn là kiểm tra xem nội dung sáng kiến có đáp ứng đầy đủ các yêu cầu trong "Mẫu Đơn yêu cầu công nhận sáng kiến" (theo Quyết định 1271/QĐ-EVNNPC) hay không.

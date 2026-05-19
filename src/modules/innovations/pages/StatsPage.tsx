@@ -154,7 +154,7 @@ const StatsPage: React.FC<StatsPageProps> = ({ initiatives, activeTheme, onViewI
     try {
       const ai = getAIInstance();
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-flash-latest',
         contents: `Phân tích dữ liệu: ${JSON.stringify(dashboardStats)}. Hãy dự báo xu hướng và gợi ý định hướng sáng kiến cho năm tới để nâng cao hiệu quả sản xuất kinh doanh.`,
         config: { systemInstruction: AI_SYSTEM_INSTRUCTION }
       });

@@ -17,7 +17,7 @@ const firebaseConfigSangkien = {
 
 // Initialize secondary Firebase app for Innovation module
 // Using a named instance to avoid conflicts with the main QLDA Firebase
-const sangkienApp = firebase.apps.find(app => app.name === 'sangkien') 
+const sangkienApp = firebase.apps.find(app => app.name === 'sangkien')
   || firebase.initializeApp(firebaseConfigSangkien, 'sangkien');
 
 export const dbSangkien = sangkienApp.firestore();
